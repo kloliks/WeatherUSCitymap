@@ -1,22 +1,38 @@
 package com.klolik.weatheruscitymap;
 
+import android.accounts.NetworkErrorException;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
     private MapView mMapView;
+    private RecyclerView mRecyclerView;
+    private List<CityRow> mDataSet;
+    private DrawerLayout mDrawer;
+    private GoogleMap mMap;
+
+    private boolean mNeedRefresh;
 
     private static final String MAPVIEW_BUNDLE_KEY = "MapViewBundleKey";
 
@@ -28,12 +44,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Toolbar toolbar = (Toolbar) findViewById(R.id.activity_main_toolbar);
         setSupportActionBar(toolbar);
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawer = (DrawerLayout) findViewById(R.id.drawer_layout);
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
+                this, mDrawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        mDrawer.addDrawerListener(toggle);
         toggle.syncState();
+
 
         Bundle mapViewBundle = null;
         if (savedInstanceState != null) {
@@ -43,6 +60,35 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMapView.onCreate(mapViewBundle);
 
         mMapView.getMapAsync(this);
+
+
+        mRecyclerView = (RecyclerView) findViewById(R.id.recycle_view);
+        mRecyclerView.setHasFixedSize(true);
+
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+
+        mNeedRefresh = true;
+        mDataSet = new ArrayList<CityRow>();
+        RecyclerView.Adapter mAdapter = new RecyclerViewAdapter(mDataSet, new myOnClickListener());
+        mRecyclerView.setAdapter(mAdapter);
+    }
+
+    private class myOnClickListener implements View.OnClickListener {
+        @Override
+        public void onClick(View view) {
+            int position = mRecyclerView.getChildLayoutPosition(view);
+            CityRow item = mDataSet.get(position);
+
+            double lat = Double.parseDouble(item.mLat);
+            double lon = Double.parseDouble(item.mLon);
+            LatLng ll = new LatLng(lat, lon);
+
+            mMap.addMarker(new MarkerOptions().position(ll).title(item.mName));
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(ll));
+            
+            mDrawer.closeDrawer(Gravity.START);
+        }
     }
 
     @Override
@@ -51,7 +97,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return true;
     }
 
+    private List<CityRow> populateCitiesList() {
+        List<CityRow> citiesList = new ArrayList<CityRow>();
+        for( int i = 0; i < 50; ++i ){
+            CityRow cityRow = new CityRow("City " + i, ""+ i*10 +".0", ""+ i*20 +".0");
+            citiesList.add(cityRow);
+        }
+
+        return citiesList;
+    }
+
     public void onRefresh(View view) {
+        mDataSet.clear();
+        mDataSet.addAll(populateCitiesList());
+
+        if (mNeedRefresh) {
+            TextView tv = (TextView) findViewById(R.id.no_available_data_drawer_label);
+            tv.setVisibility(View.INVISIBLE);
+            mNeedRefresh = true;
+        }
+
+        mRecyclerView.getAdapter().notifyDataSetChanged();
     }
 
     @Override
@@ -69,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onMapReady(GoogleMap map) {
-        map.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker"));
+        mMap = map;
     }
 
     @Override

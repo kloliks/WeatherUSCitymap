@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/gradient_bg"
+    android:padding="5dp"
+    android:id="@+id/cityLayout">
+
+    <TextView
+        android:text="cityName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#040404"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:id="@+id/cityName" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/cityName"
+        android:orientation="vertical"
+        android:id="@+id/labels">
+
+        <TextView
+            android:text="lat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#343434"
+            android:textSize="12sp" />
+
+        <TextView
+            android:text="lon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#343434"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginLeft="1dp"
+        android:layout_toRightOf="@id/labels"
+        android:layout_alignTop="@id/labels" >
+
+        <TextView
+            android:text=": cityLat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#343434"
+            android:textSize="12sp"
+            android:id="@+id/cityLat" />
+
+        <TextView
+            android:text=": cityLon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#343434"
+            android:textSize="12sp"
+            android:id="@+id/cityLon" />
+    </LinearLayout>
+
+</RelativeLayout>
