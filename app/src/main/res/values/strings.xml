@@ -5,4 +5,7 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="no_available_data">No available data</string>
+
+    <string name="url_gzip_city_archive">http://bulk.openweathermap.org/sample/city.list.us.json.gz</string>
+    <string name="city_file_name">city.list.us.json</string>
 </resources>

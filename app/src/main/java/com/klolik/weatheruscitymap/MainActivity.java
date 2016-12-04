@@ -1,6 +1,7 @@
 package com.klolik.weatheruscitymap;
 
-import android.accounts.NetworkErrorException;
+import android.os.Environment;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
@@ -8,11 +9,9 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -21,6 +20,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private DrawerLayout mDrawer;
     private GoogleMap mMap;
 
+    private String mJsonCitiesFile;
     private boolean mNeedRefresh;
 
     private static final String MAPVIEW_BUNDLE_KEY = "MapViewBundleKey";
@@ -68,8 +69,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        mNeedRefresh = true;
-        mDataSet = new ArrayList<CityRow>();
+        mJsonCitiesFile = Environment.getExternalStorageDirectory().getPath()
+                +"/"+ mContext.getResources().getString(R.string.city_file_name);
+
+        File json = new File(mJsonCitiesFile);
+        mNeedRefresh = ! json.exists();
+        if (mNeedRefresh)
+            mDataSet = new ArrayList<CityRow>();
+        else
+            mDataSet = populateCitiesList();
+//            long lastTime = json.lastModified();
+//            Toast.makeText(this, "last time: "+lastTime, Toast.LENGTH_SHORT).show();
+
+
         RecyclerView.Adapter mAdapter = new RecyclerViewAdapter(mDataSet, new myOnClickListener());
         mRecyclerView.setAdapter(mAdapter);
     }
@@ -84,21 +96,31 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             double lon = Double.parseDouble(item.mLon);
             LatLng ll = new LatLng(lat, lon);
 
+            mMap.clear();
             mMap.addMarker(new MarkerOptions().position(ll).title(item.mName));
             mMap.moveCamera(CameraUpdateFactory.newLatLng(ll));
             
-            mDrawer.closeDrawer(Gravity.START);
+            mDrawer.closeDrawer(GravityCompat.START);
         }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_activity_main, menu);
+        if (mNeedRefresh) {
+            View refresh_view = menu.findItem(R.id.action_refresh).getActionView();
+            onRefresh(refresh_view);
+        }
         return true;
     }
 
     private List<CityRow> populateCitiesList() {
         List<CityRow> citiesList = new ArrayList<CityRow>();
+
+        File json = new File(mJsonCitiesFile);
+        if (!json.exists())
+            return citiesList;
+        
         for( int i = 0; i < 50; ++i ){
             CityRow cityRow = new CityRow("City " + i, ""+ i*10 +".0", ""+ i*20 +".0");
             citiesList.add(cityRow);
@@ -108,15 +130,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     public void onRefresh(View view) {
+        DownloadAndExtractTask asyncTask = new DownloadAndExtractTask(this, view);
+        asyncTask.execute(new DETaskArgs(
+                getResources().getString(R.string.url_gzip_city_archive),
+                mJsonCitiesFile
+                )
+        );
+
+    }
+
+    public void swapDataSet() {
         mDataSet.clear();
         mDataSet.addAll(populateCitiesList());
-
         if (mNeedRefresh) {
             TextView tv = (TextView) findViewById(R.id.no_available_data_drawer_label);
             tv.setVisibility(View.INVISIBLE);
-            mNeedRefresh = true;
+            mNeedRefresh = false;
         }
-
         mRecyclerView.getAdapter().notifyDataSetChanged();
     }
 
