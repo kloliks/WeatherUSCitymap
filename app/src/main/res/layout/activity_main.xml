@@ -29,16 +29,10 @@
         android:layout_height="match_parent"
         tools:openDrawer="start" >
 
-        <RelativeLayout
-            android:id="@+id/content_main_layout"
+        <com.google.android.gms.maps.MapView
             android:layout_width="match_parent"
-            android:layout_height="match_parent" >
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Hello World!" />
-        </RelativeLayout>
+            android:layout_height="match_parent"
+            android:id="@+id/mapView" />
 
         <RelativeLayout
             android:layout_gravity="start"
