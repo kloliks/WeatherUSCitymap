@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Weather US City map</string>
+
+    <string name="no_available_data">No available data</string>
 </resources>
