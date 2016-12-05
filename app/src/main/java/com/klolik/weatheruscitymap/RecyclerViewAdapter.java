@@ -2,24 +2,22 @@ package com.klolik.weatheruscitymap;
 
 
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.List;
 
-public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        public TextView         mCityLat;
-        public TextView         mCityLon;
-        public TextView         mCityName;
-        public RelativeLayout   mCityLayout;
+class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView         mCityLat;
+        TextView         mCityLon;
+        TextView         mCityName;
+        RelativeLayout   mCityLayout;
 
-        public ViewHolder(View view) {
+        ViewHolder(View view) {
             super(view);
             mCityLat  = (TextView) view.findViewById(R.id.cityLat);
             mCityLon  = (TextView) view.findViewById(R.id.cityLon);
@@ -30,7 +28,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
     private View.OnClickListener mOnClickListener;
     private List<CityRow> mDataSet;
-    public RecyclerViewAdapter(List<CityRow> dataSet, View.OnClickListener onClickListener) {
+    RecyclerViewAdapter(List<CityRow> dataSet, View.OnClickListener onClickListener) {
         mOnClickListener = onClickListener;
         mDataSet = dataSet;
     }

@@ -25,14 +25,14 @@
         android:id="@+id/labels">
 
         <TextView
-            android:text="lat"
+            android:text="@string/latitude"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="#343434"
             android:textSize="12sp" />
 
         <TextView
-            android:text="lon"
+            android:text="@string/longitude"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="#343434"
@@ -43,12 +43,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginLeft="1dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_toEndOf="@id/labels"
         android:layout_toRightOf="@id/labels"
         android:layout_alignTop="@id/labels" >
 
         <TextView
-            android:text=": cityLat"
+            android:text="cityLat"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#343434"
@@ -56,7 +58,7 @@
             android:id="@+id/cityLat" />
 
         <TextView
-            android:text=": cityLon"
+            android:text="cityLon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#343434"

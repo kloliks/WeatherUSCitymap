@@ -1,8 +1,8 @@
 package com.klolik.weatheruscitymap;
 
-public class DETaskArgs {
-    public String sUrl;
-    public String sPath;
+class DETaskArgs {
+    String sUrl;
+    String sPath;
 
     DETaskArgs(String url, String path) {
         sUrl = url;

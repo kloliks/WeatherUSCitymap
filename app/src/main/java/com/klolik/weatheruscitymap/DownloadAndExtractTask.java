@@ -17,11 +17,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.zip.GZIPInputStream;
 
-public class DownloadAndExtractTask extends AsyncTask<DETaskArgs, Void, Void> {
+class DownloadAndExtractTask extends AsyncTask<DETaskArgs, Void, Void> {
     private Context mContext;
     private View mView;
 
-    public DownloadAndExtractTask(Context context, View view) {
+    DownloadAndExtractTask(Context context, View view) {
         mContext = context;
         mView = view;
     }

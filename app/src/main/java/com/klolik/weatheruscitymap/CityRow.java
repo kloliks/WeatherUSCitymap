@@ -1,6 +1,6 @@
 package com.klolik.weatheruscitymap;
 
-public class CityRow {
+class CityRow {
     String mName;
     String mLat;
     String mLon;

@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.TextView;
@@ -18,9 +19,15 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.maps.android.clustering.ClusterManager;
+import com.google.maps.android.clustering.algo.GridBasedAlgorithm;
+import com.google.maps.android.clustering.algo.PreCachingAlgorithmDecorator;
+import com.google.maps.android.clustering.view.ClusterRenderer;
+
+import org.json.JSONException;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +38,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private List<CityRow> mDataSet;
     private DrawerLayout mDrawer;
     private GoogleMap mMap;
+    private ClusterManager<MapMarker> mClusterManager;
 
     private String mJsonCitiesFile;
     private boolean mNeedRefresh;
@@ -42,6 +50,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mClusterManager = null;
+
+        initDrawerAndToolbar();
+        initMapView(savedInstanceState);
+        initRecycleView();
+    }
+
+
+    private void initDrawerAndToolbar() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.activity_main_toolbar);
         setSupportActionBar(toolbar);
 
@@ -51,8 +68,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 this, mDrawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         mDrawer.addDrawerListener(toggle);
         toggle.syncState();
+    }
 
 
+    private void initMapView(Bundle savedInstanceState) {
         Bundle mapViewBundle = null;
         if (savedInstanceState != null) {
             mapViewBundle = savedInstanceState.getBundle(MAPVIEW_BUNDLE_KEY);
@@ -61,30 +80,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMapView.onCreate(mapViewBundle);
 
         mMapView.getMapAsync(this);
-
-
-        mRecyclerView = (RecyclerView) findViewById(R.id.recycle_view);
-        mRecyclerView.setHasFixedSize(true);
-
-        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
-        mRecyclerView.setLayoutManager(mLayoutManager);
-
-        mJsonCitiesFile = Environment.getExternalStorageDirectory().getPath()
-                +"/"+ mContext.getResources().getString(R.string.city_file_name);
-
-        File json = new File(mJsonCitiesFile);
-        mNeedRefresh = ! json.exists();
-        if (mNeedRefresh)
-            mDataSet = new ArrayList<CityRow>();
-        else
-            mDataSet = populateCitiesList();
-//            long lastTime = json.lastModified();
-//            Toast.makeText(this, "last time: "+lastTime, Toast.LENGTH_SHORT).show();
-
-
-        RecyclerView.Adapter mAdapter = new RecyclerViewAdapter(mDataSet, new myOnClickListener());
-        mRecyclerView.setAdapter(mAdapter);
     }
+
 
     private class myOnClickListener implements View.OnClickListener {
         @Override
@@ -96,13 +93,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             double lon = Double.parseDouble(item.mLon);
             LatLng ll = new LatLng(lat, lon);
 
-            mMap.clear();
-            mMap.addMarker(new MarkerOptions().position(ll).title(item.mName));
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(ll));
-            
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ll, 20));
             mDrawer.closeDrawer(GravityCompat.START);
         }
     }
+
+    private void initRecycleView() {
+        mRecyclerView = (RecyclerView) findViewById(R.id.recycle_view);
+        mRecyclerView.setHasFixedSize(true);
+
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+
+        mJsonCitiesFile = Environment.getExternalStorageDirectory().getPath()
+                +"/"+ getResources().getString(R.string.city_file_name);
+
+        mDataSet = populateCitiesList();
+        mNeedRefresh = mDataSet.size() == 0;
+
+        RecyclerView.Adapter mAdapter = new RecyclerViewAdapter(mDataSet, new myOnClickListener());
+        mRecyclerView.setAdapter(mAdapter);
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -114,19 +126,44 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return true;
     }
 
+
     private List<CityRow> populateCitiesList() {
         List<CityRow> citiesList = new ArrayList<CityRow>();
 
         File json = new File(mJsonCitiesFile);
         if (!json.exists())
             return citiesList;
-        
-        for( int i = 0; i < 50; ++i ){
-            CityRow cityRow = new CityRow("City " + i, ""+ i*10 +".0", ""+ i*20 +".0");
-            citiesList.add(cityRow);
+
+        try {
+            CitiesJsonReader reader = new CitiesJsonReader(json);
+            CityRow row;
+            while ((row = reader.readNext()) != null) {
+                citiesList.add(row);
+            }
+            reader.close();
+        } catch (IOException e) {
+            Log.e("IOException", e.getMessage());
+        } catch (JSONException e) {
+            Log.e("JSONException", e.getMessage());
         }
 
+        if (mClusterManager != null) {
+            mClusterManager.clearItems();
+            fillMap(citiesList);
+        }
         return citiesList;
+    }
+
+    private void fillMap(List<CityRow> list) {
+        for (int i = 0; i < list.size(); ++i) {
+            double lat = Double.parseDouble(list.get(i).mLat);
+            double lon = Double.parseDouble(list.get(i).mLon);
+            LatLng ll = new LatLng(lat, lon);
+
+            MapMarker marker = new MapMarker(lat, lon, list.get(i).mName);
+            mClusterManager.addItem(marker);
+        }
+        mClusterManager.cluster();
     }
 
     public void onRefresh(View view) {
@@ -150,6 +187,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mRecyclerView.getAdapter().notifyDataSetChanged();
     }
 
+
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -166,6 +204,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(GoogleMap map) {
         mMap = map;
+        mClusterManager = new ClusterManager<MapMarker>(this.getApplicationContext(), mMap);
+        mClusterManager.setRenderer(new MapCustomClusterRenderer(this.getApplicationContext(), mMap, mClusterManager));
+        GridBasedAlgorithm<MapMarker> gridAlgorithm = new GridBasedAlgorithm<MapMarker>();
+        mClusterManager.setAlgorithm(new PreCachingAlgorithmDecorator<MapMarker>(gridAlgorithm));
+        mMap.setOnCameraIdleListener(mClusterManager);
+        mMap.setOnMarkerClickListener(mClusterManager);
+        if (!mDataSet.isEmpty()) {
+            mClusterManager.clearItems();
+            fillMap(mDataSet);
+        }
     }
 
     @Override
